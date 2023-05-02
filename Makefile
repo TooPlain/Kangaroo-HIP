@@ -83,10 +83,10 @@ $(OBJDIR)/%.o : %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 all: bsgs
-
+#use HIPCC instead of cxx for linking
 bsgs: $(OBJET)
 	@echo Making Kangaroo...
-	$(CXX) $(OBJET) $(LFLAGS) -o kangaroo
+	$(HIPCC) $(OBJET) $(LFLAGS) -o kangaroo
 
 $(OBJET): | $(OBJDIR) $(OBJDIR)/SECPK1 $(OBJDIR)/GPU
 

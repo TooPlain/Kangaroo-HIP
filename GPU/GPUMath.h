@@ -24,8 +24,8 @@
 #define BIFULLSIZE 40
 
 // Assembly directives
-#define UADDO(c, a, b) asm volatile ("v_add_cc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
-#define UADDC(c, a, b) asm volatile ("v_addc_cc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
+#define UADDO(c, a, b) asm volatile ("v_add_co_ci_u32_e64 %0,vcc, %1, %2;"  : "=v"(c) : "v"(a), "v"(b) : "memory" );
+#define UADDC(c, a, b) asm volatile ("v_addc_co_u32_e32 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
 #define UADD(c, a, b) asm volatile ("v_addc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b));
 
 #define UADDO1(c, a) asm volatile ("v_add_cc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) : "memory" );
@@ -41,7 +41,7 @@
 #define USUB1(c, a) asm volatile ("v_subc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) );
 
 #define UMULLO(lo,a, b) asm volatile ("v_mul_lo_u64 %0, %1, %2;" : "=v"(lo) : "v"(a), "v"(b));
-#define UMULHI(hi,a, b) asm volatile ("v_mul_hi_u64 %0, %1, %2;" : "=v"(hi) : "v"(a), "v"(b));
+#define UMULHI(hi,a, b) asm volatile ("v_mul_hi_u32_u24_e64 %0, %1, %2;" : "=v2"(hi) : "v"(a), "v"(b));
 #define MADDO(r,a,b,c) asm volatile ("v_mad_hicc_u64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c) : "memory" );
 #define MADDC(r,a,b,c) asm volatile ("v_madc_hi_cc_u64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c) : "memory" );
 #define MADD(r,a,b,c) asm volatile ("v_madc_hi_u64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c));
