@@ -24,28 +24,28 @@
 #define BIFULLSIZE 40
 
 // Assembly directives
-#define UADDO(c, a, b) asm volatile ("add.cc.u64 %0, %1, %2;" : "=l"(c) : "l"(a), "l"(b) : "memory" );
-#define UADDC(c, a, b) asm volatile ("addc.cc.u64 %0, %1, %2;" : "=l"(c) : "l"(a), "l"(b) : "memory" );
-#define UADD(c, a, b) asm volatile ("addc.u64 %0, %1, %2;" : "=l"(c) : "l"(a), "l"(b));
+#define UADDO(c, a, b) asm volatile ("v_add_cc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
+#define UADDC(c, a, b) asm volatile ("v_addc_cc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
+#define UADD(c, a, b) asm volatile ("v_addc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b));
 
-#define UADDO1(c, a) asm volatile ("add.cc.u64 %0, %0, %1;" : "+l"(c) : "l"(a) : "memory" );
-#define UADDC1(c, a) asm volatile ("addc.cc.u64 %0, %0, %1;" : "+l"(c) : "l"(a) : "memory" );
-#define UADD1(c, a) asm volatile ("addc.u64 %0, %0, %1;" : "+l"(c) : "l"(a));
+#define UADDO1(c, a) asm volatile ("v_add_cc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) : "memory" );
+#define UADDC1(c, a) asm volatile ("v_addc_cc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) : "memory" );
+#define UADD1(c, a) asm volatile ("v_addc_u64 %0, %0, %1;" : "+v"(c) : "v"(a));
 
-#define USUBO(c, a, b) asm volatile ("sub.cc.u64 %0, %1, %2;" : "=l"(c) : "l"(a), "l"(b) : "memory" );
-#define USUBC(c, a, b) asm volatile ("subc.cc.u64 %0, %1, %2;" : "=l"(c) : "l"(a), "l"(b) : "memory" );
-#define USUB(c, a, b) asm volatile ("subc.u64 %0, %1, %2;" : "=l"(c) : "l"(a), "l"(b));
+#define USUBO(c, a, b) asm volatile ("v_sub_cc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
+#define USUBC(c, a, b) asm volatile ("v_subc_cc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b) : "memory" );
+#define USUB(c, a, b) asm volatile ("v_subc_u64 %0, %1, %2;" : "=v"(c) : "v"(a), "v"(b));
 
-#define USUBO1(c, a) asm volatile ("sub.cc.u64 %0, %0, %1;" : "+l"(c) : "l"(a) : "memory" );
-#define USUBC1(c, a) asm volatile ("subc.cc.u64 %0, %0, %1;" : "+l"(c) : "l"(a) : "memory" );
-#define USUB1(c, a) asm volatile ("subc.u64 %0, %0, %1;" : "+l"(c) : "l"(a) );
+#define USUBO1(c, a) asm volatile ("v_sub_cc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) : "memory" );
+#define USUBC1(c, a) asm volatile ("v_subc_cc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) : "memory" );
+#define USUB1(c, a) asm volatile ("v_subc_u64 %0, %0, %1;" : "+v"(c) : "v"(a) );
 
-#define UMULLO(lo,a, b) asm volatile ("mul.lo.u64 %0, %1, %2;" : "=l"(lo) : "l"(a), "l"(b));
-#define UMULHI(hi,a, b) asm volatile ("mul.hi.u64 %0, %1, %2;" : "=l"(hi) : "l"(a), "l"(b));
-#define MADDO(r,a,b,c) asm volatile ("mad.hi.cc.u64 %0, %1, %2, %3;" : "=l"(r) : "l"(a), "l"(b), "l"(c) : "memory" );
-#define MADDC(r,a,b,c) asm volatile ("madc.hi.cc.u64 %0, %1, %2, %3;" : "=l"(r) : "l"(a), "l"(b), "l"(c) : "memory" );
-#define MADD(r,a,b,c) asm volatile ("madc.hi.u64 %0, %1, %2, %3;" : "=l"(r) : "l"(a), "l"(b), "l"(c));
-#define MADDS(r,a,b,c) asm volatile ("madc.hi.s64 %0, %1, %2, %3;" : "=l"(r) : "l"(a), "l"(b), "l"(c));
+#define UMULLO(lo,a, b) asm volatile ("v_mul_lo_u64 %0, %1, %2;" : "=v"(lo) : "v"(a), "v"(b));
+#define UMULHI(hi,a, b) asm volatile ("v_mul_hi_u64 %0, %1, %2;" : "=v"(hi) : "v"(a), "v"(b));
+#define MADDO(r,a,b,c) asm volatile ("v_mad_hicc_u64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c) : "memory" );
+#define MADDC(r,a,b,c) asm volatile ("v_madc_hi_cc_u64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c) : "memory" );
+#define MADD(r,a,b,c) asm volatile ("v_madc_hi_u64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c));
+#define MADDS(r,a,b,c) asm volatile ("v_madc_hi_s64 %0, %1, %2, %3;" : "=v"(r) : "v"(a), "v"(b), "v"(c));
 
 // Jump distance
 __device__ __constant__ uint64_t jD[NB_JUMP][2];
@@ -555,7 +555,7 @@ __device__ __forceinline__ uint32_t ctz(uint64_t x) {
     " brev.b64 tmp, %1;\n\t"
     " clz.b64 %0, tmp;\n\t"
     "}"
-    : "=r"(n) : "l"(x));
+    : "=r"(n) : "v"(x));
   return n;
 }
 

@@ -21,8 +21,8 @@
 #endif
 
 #include "GPUEngine.h"
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <hip/hip_common.h>
+#include <hip/hip_runtime.h>
 
 #include <stdint.h>
 #include "../Timer.h"
@@ -97,9 +97,11 @@ using namespace std;
 
 int _ConvertSMVer2Cores(int major,int minor) {
 
+	return 60; // since I have 60 CUs I hope thats the purpose of this lol will find out soon.
+	////Returning static value for testing only will implement some sort of function to properly count for amd gpus
   // Defines for GPU Architecture types (using the SM version to determine
   // the # of cores per SM
-  typedef struct {
+  /*typedef struct {
     int SM;  // 0xMm (hexidecimal notation), M = SM Major version,
              // and m = SM minor version
     int Cores;
@@ -133,7 +135,7 @@ int _ConvertSMVer2Cores(int major,int minor) {
     index++;
   }
 
-  return 0;
+  return 0;*/
 
 }
 
