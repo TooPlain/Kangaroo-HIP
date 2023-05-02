@@ -10,6 +10,11 @@ As an community we have to start somewhere, so I decided I'll attempt to port th
 
 So big shoutout to the original author of this repo JLP! For writing the app!
 
+Status:
+WORK IN PROGRESS - NOT COMPILING AS OF NOW.
+
+```
+
 A Pollard's kangaroo interval ECDLP solver for SECP256K1 (based on VanitySearch engine).\
 **This program is limited to a 125bit interval search.**
 
