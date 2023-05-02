@@ -43,38 +43,39 @@ CXX        = g++
 CUDA       = /usr/local/cuda-8.0
 CXXCUDA    = /usr/bin/g++-4.8
 NVCC       = $(CUDA)/bin/nvcc
-ROCM	   = /opt/rocm
-HIPCC	   = $(ROCM)/bin/hipcc
+HIP_PATH ?= $(shell hipconfig --path)
+HIPCC	   = $(HIP_PATH)/bin/hipcc
 
 ifdef gpu
 
 ifdef debug
-CXXFLAGS   = -DWITHGPU -m64  -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(CUDA)/include
+CXXFLAGS   = -DWITHGPU -m64  -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(HIP_PATH)/include
 else
-CXXFLAGS   = -DWITHGPU -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(CUDA)/include
+CXXFLAGS   = -DWITHGPU -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(HIP_PATH)/include
 endif
-LFLAGS     = -lpthread -L$(CUDA)/lib64 -lcudart
+LFLAGS     = -lpthread -L$(HIP_PATH)/lib
 
 else
 
 ifdef debug
-CXXFLAGS   = -m64 -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(CUDA)/include
+CXXFLAGS   = -m64 -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(HIP_PATH)/include
 else
-CXXFLAGS   =  -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(CUDA)/include
+CXXFLAGS   =  -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(HIP_PATH)/include
 endif
 LFLAGS     = -lpthread
 
 endif
 
 #--------------------------------------------------------------------
+# This area wIll be changing alot, so please don't mind it.
 
 ifdef gpu
 ifdef debug
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(NVCC) -G -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -g -I$(CUDA)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(HIPCC) -G -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(HIPCC) -m64 -g -I$(HIP_PATH)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
 else
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(NVCC) -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -O2 -I$(CUDA)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(HIPCC) -fPIC -O2 -I$(HIP_PATH)/include -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
 endif
 endif
 

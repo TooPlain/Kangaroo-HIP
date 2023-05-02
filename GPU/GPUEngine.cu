@@ -148,13 +148,13 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
   // Initialise CUDA
   this->nbThreadPerGroup = nbThreadPerGroup;
   initialised = false;
-  cudaError_t err;
+  hipError_t err;
 
   int deviceCount = 0;
-  cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
+  hipError_t error_id = hipGetDeviceCount(&deviceCount);
 
-  if(error_id != cudaSuccess) {
-    printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
+  if(error_id != hipSuccess) {
+    printf("GPUEngine: hipGetDeviceCount %s\n",hipGetErrorString(error_id));
     return;
   }
 
@@ -164,14 +164,14 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
     return;
   }
 
-  err = cudaSetDevice(gpuId);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: %s\n",cudaGetErrorString(err));
+  err = hipSetDevice(gpuId);
+  if(err != hipSuccess) {
+    printf("GPUEngine: %s\n",hipGetErrorString(err));
     return;
   }
 
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp,gpuId);
+  hipDeviceProp_t deviceProp;
+  hipGetDeviceProperties(&deviceProp,gpuId);
 
   this->nbThread = nbThreadGroup * nbThreadPerGroup;
   this->maxFound = maxFound;
@@ -186,9 +186,9 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
   deviceName = std::string(tmp);
 
   // Prefer L1 (We do not use __shared__ at all)
-  err = cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: %s\n",cudaGetErrorString(err));
+  err = hipDeviceSetCacheConfig(hipFuncCachePreferL1);
+  if(err != hipSuccess) {
+    printf("GPUEngine: %s\n",hipGetErrorString(err));
     return;
   }
 
@@ -201,35 +201,35 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
 
   // Input kangaroos
   kangarooSize = nbThread * GPU_GRP_SIZE * KSIZE * 8;
-  err = cudaMalloc((void **)&inputKangaroo,kangarooSize);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Allocate input memory: %s\n",cudaGetErrorString(err));
+  err = hipMalloc((void **)&inputKangaroo,kangarooSize);
+  if(err != hipSuccess) {
+    printf("GPUEngine: Allocate input memory: %s\n",hipGetErrorString(err));
     return;
   }
   kangarooSizePinned = nbThreadPerGroup * GPU_GRP_SIZE *  KSIZE * 8;
-  err = cudaHostAlloc(&inputKangarooPinned,kangarooSizePinned,cudaHostAllocWriteCombined | cudaHostAllocMapped);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Allocate input pinned memory: %s\n",cudaGetErrorString(err));
+  err = hipHostRegister(&inputKangarooPinned,kangarooSizePinned,hipHostRegisterMapped);
+  if(err != hipSuccess) {
+    printf("GPUEngine: Allocate input pinned memory: %s\n",hipGetErrorString(err));
     return;
   }
 
   // OutputHash
-  err = cudaMalloc((void **)&outputItem,outputSize);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Allocate output memory: %s\n",cudaGetErrorString(err));
+  err = hipMalloc((void **)&outputItem,outputSize);
+  if(err != hipSuccess) {
+    printf("GPUEngine: Allocate output memory: %s\n",hipGetErrorString(err));
     return;
   }
-  err = cudaHostAlloc(&outputItemPinned,outputSize,cudaHostAllocMapped);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Allocate output pinned memory: %s\n",cudaGetErrorString(err));
+  err = hipHostRegister(&outputItemPinned,outputSize,hipHostRegisterMapped);
+  if(err != hipSuccess) {
+    printf("GPUEngine: Allocate output pinned memory: %s\n",hipGetErrorString(err));
     return;
   }
 
   // Jump array
   jumpSize = NB_JUMP * 8 * 4;
-  err = cudaHostAlloc(&jumpPinned,jumpSize,cudaHostAllocMapped);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Allocate jump pinned memory: %s\n",cudaGetErrorString(err));
+  err = hipHostRegister(&jumpPinned,jumpSize,hipHostRegisterMapped);
+  if(err != hipSuccess) {
+    printf("GPUEngine: Allocate jump pinned memory: %s\n",hipGetErrorString(err));
     return;
   }
 
@@ -256,11 +256,11 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
 
 GPUEngine::~GPUEngine() {
 
-  if(inputKangaroo) cudaFree(inputKangaroo);
-  if(outputItem) cudaFree(outputItem);
-  if(inputKangarooPinned) cudaFreeHost(inputKangarooPinned);
-  if(outputItemPinned) cudaFreeHost(outputItemPinned);
-  if(jumpPinned) cudaFreeHost(jumpPinned);
+  if(inputKangaroo) hipFree(inputKangaroo);
+  if(outputItem) hipFree(outputItem);
+  if(inputKangarooPinned) hipHostFree(inputKangarooPinned);
+  if(outputItemPinned) hipHostFree(outputItemPinned);
+  if(jumpPinned) hipHostFree(jumpPinned);
 
 }
 
@@ -279,10 +279,10 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
   if(*x <= 0 || *y <= 0) {
 
     int deviceCount = 0;
-    cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
+    hipError_t error_id = hipGetDeviceCount(&deviceCount);
 
-    if(error_id != cudaSuccess) {
-      printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
+    if(error_id != hipSuccess) {
+      printf("GPUEngine: hipGetDeviceCount %s\n",hipGetErrorString(error_id));
       return false;
     }
 
@@ -297,8 +297,8 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
       return false;
     }
 
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp,gpuId);
+    hipDeviceProp_t deviceProp;
+    hipGetDeviceProperties(&deviceProp,gpuId);
 
     if(*x <= 0) *x = 2 * deviceProp.multiProcessorCount;
     if(*y <= 0) *y = 2 * _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor);
@@ -314,9 +314,9 @@ void *GPUEngine::AllocatePinnedMemory(size_t size) {
 
   void *buff;
 
-  cudaError_t err = cudaHostAlloc(&buff,size,cudaHostAllocPortable);
-  if(err != cudaSuccess) {
-    printf("GPUEngine: AllocatePinnedMemory: %s\n",cudaGetErrorString(err));
+  hipError_t err = hipHostRegister(&buff,size,hipHostRegisterPortable);
+  if(err != hipSuccess) {
+    printf("GPUEngine: AllocatePinnedMemory: %s\n",hipGetErrorString(err));
     return NULL;
   }
 
@@ -325,12 +325,12 @@ void *GPUEngine::AllocatePinnedMemory(size_t size) {
 }
 
 void GPUEngine::FreePinnedMemory(void *buff) {
-  cudaFreeHost(buff);
+  hipHostFree(buff);
 }
 
 void GPUEngine::PrintCudaInfo() {
 
-  cudaError_t err;
+  hipError_t err;
 
   const char *sComputeMode[] =
   {
@@ -343,10 +343,10 @@ void GPUEngine::PrintCudaInfo() {
   };
 
   int deviceCount = 0;
-  cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
+  hipError_t error_id = hipGetDeviceCount(&deviceCount);
 
-  if(error_id != cudaSuccess) {
-    printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
+  if(error_id != hipSuccess) {
+    printf("GPUEngine: hipGetDeviceCount %s\n",hipGetErrorString(error_id));
     return;
   }
 
@@ -358,14 +358,14 @@ void GPUEngine::PrintCudaInfo() {
 
   for(int i = 0; i<deviceCount; i++) {
 
-    err = cudaSetDevice(i);
-    if(err != cudaSuccess) {
-      printf("GPUEngine: cudaSetDevice(%d) %s\n",i,cudaGetErrorString(err));
+    err = hipSetDevice(i);
+    if(err != hipSuccess) {
+      printf("GPUEngine: hipSetDevice(%d) %s\n",i,hipGetErrorString(err));
       return;
     }
 
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp,i);
+    hipDeviceProp_t deviceProp;
+    hipGetDeviceProperties(&deviceProp,i);
     printf("GPU #%d %s (%dx%d cores) (Cap %d.%d) (%.1f MB) (%s)\n",
       i,deviceProp.name,deviceProp.multiProcessorCount,
       _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor),
@@ -423,13 +423,13 @@ void GPUEngine::SetKangaroos(Int *px,Int *py,Int *d) {
     }
 
     uint32_t offset = b * blockSize;
-    cudaMemcpy(inputKangaroo + offset,inputKangarooPinned,kangarooSizePinned,cudaMemcpyHostToDevice);
+    hipMemcpy(inputKangaroo + offset,inputKangarooPinned,kangarooSizePinned,hipMemcpyHostToDevice);
 
   }
 
-  cudaError_t err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: SetKangaroos: %s\n",cudaGetErrorString(err));
+  hipError_t err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: SetKangaroos: %s\n",hipGetErrorString(err));
   }
 
 }
@@ -451,7 +451,7 @@ void GPUEngine::GetKangaroos(Int *px,Int *py,Int *d) {
   for(int b = 0; b < nbBlock; b++) {
 
     uint32_t offset = b * blockSize;
-    cudaMemcpy(inputKangarooPinned,inputKangaroo + offset,kangarooSizePinned,cudaMemcpyDeviceToHost);
+    hipMemcpy(inputKangarooPinned,inputKangaroo + offset,kangarooSizePinned,hipMemcpyDeviceToHost);
 
     for(int g = 0; g < GPU_GRP_SIZE; g++) {
 
@@ -485,9 +485,9 @@ void GPUEngine::GetKangaroos(Int *px,Int *py,Int *d) {
     }
   }
 
-  cudaError_t err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: GetKangaroos: %s\n",cudaGetErrorString(err));
+  hipError_t err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: GetKangaroos: %s\n",hipGetErrorString(err));
   }
 
 }
@@ -504,37 +504,37 @@ void GPUEngine::SetKangaroo(uint64_t kIdx,Int *px,Int *py,Int *d) {
 
   // X
   inputKangarooPinned[0] = px->bits64[0];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 0 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 0 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = px->bits64[1];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 1 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 1 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = px->bits64[2];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 2 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 2 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = px->bits64[3];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 3 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 3 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
 
   // Y
   inputKangarooPinned[0] = py->bits64[0];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 4 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 4 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = py->bits64[1];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 5 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 5 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = py->bits64[2];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 6 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 6 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = py->bits64[3];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 7 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 7 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
 
   // D
   Int dOff;
   dOff.Set(d);
   if(kIdx % 2 == WILD) dOff.ModAddK1order(&wildOffset);
   inputKangarooPinned[0] = dOff.bits64[0];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 8 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 8 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
   inputKangarooPinned[0] = dOff.bits64[1];
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 9 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 9 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
 
 #ifdef USE_SYMMETRY
   // Last jump
   inputKangarooPinned[0] = (uint64_t)NB_JUMP;
-  cudaMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 10 * nbThreadPerGroup),inputKangarooPinned,8,cudaMemcpyHostToDevice);
+  hipMemcpy(inputKangaroo + (b * blockSize + g * strideSize + t + 10 * nbThreadPerGroup),inputKangarooPinned,8,hipMemcpyHostToDevice);
 #endif
 
 }
@@ -542,15 +542,14 @@ void GPUEngine::SetKangaroo(uint64_t kIdx,Int *px,Int *py,Int *d) {
 bool GPUEngine::callKernel() {
 
   // Reset nbFound
-  cudaMemset(outputItem,0,4);
+  hipMemset(outputItem,0,4);
 
   // Call the kernel (Perform STEP_SIZE keys per thread)
-  comp_kangaroos << < nbThread / nbThreadPerGroup,nbThreadPerGroup >> >
-      (inputKangaroo,maxFound,outputItem,dpMask);
+  comp_kangaroos << < nbThread / nbThreadPerGroup,nbThreadPerGroup >> > (inputKangaroo,maxFound,outputItem,dpMask);
 
-  cudaError_t err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Kernel: %s\n",cudaGetErrorString(err));
+  hipError_t err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: Kernel: %s\n",hipGetErrorString(err));
     return false;
   }
 
@@ -564,28 +563,28 @@ void GPUEngine::SetParams(uint64_t dpMask,Int *distance,Int *px,Int *py) {
 
   for(int i=0;i< NB_JUMP;i++)
     memcpy(jumpPinned + 2*i,distance[i].bits64,16);
-  cudaMemcpyToSymbol(jD,jumpPinned,jumpSize/2);
-  cudaError_t err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",cudaGetErrorString(err));
+  hipMemcpyToSymbol(jD,jumpPinned,jumpSize/2);
+  hipError_t err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",hipGetErrorString(err));
     return;
   }
 
   for(int i = 0; i < NB_JUMP; i++)
     memcpy(jumpPinned + 4 * i,px[i].bits64,32);
-  cudaMemcpyToSymbol(jPx,jumpPinned,jumpSize);
-  err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",cudaGetErrorString(err));
+  hipMemcpyToSymbol(jPx,jumpPinned,jumpSize);
+  err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",hipGetErrorString(err));
     return;
   }
 
   for(int i = 0; i < NB_JUMP; i++)
     memcpy(jumpPinned + 4 * i,py[i].bits64,32);
-  cudaMemcpyToSymbol(jPy,jumpPinned,jumpSize);
-  err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",cudaGetErrorString(err));
+  hipMemcpyToSymbol(jPy,jumpPinned,jumpSize);
+  err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",hipGetErrorString(err));
     return;
   }
 
@@ -595,10 +594,10 @@ bool GPUEngine::callKernelAndWait() {
 
   // Debug function
   callKernel();
-  cudaMemcpy(outputItemPinned,outputItem,outputSize,cudaMemcpyDeviceToHost);
-  cudaError_t err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: callKernelAndWait: %s\n",cudaGetErrorString(err));
+  hipMemcpy(outputItemPinned,outputItem,outputSize,hipMemcpyDeviceToHost);
+  hipError_t err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: callKernelAndWait: %s\n",hipGetErrorString(err));
     return false;
   }
 
@@ -615,26 +614,26 @@ bool GPUEngine::Launch(std::vector<ITEM> &hashFound,bool spinWait) {
 
   if(spinWait) {
 
-    cudaMemcpy(outputItemPinned,outputItem,outputSize,cudaMemcpyDeviceToHost);
+    hipMemcpy(outputItemPinned,outputItem,outputSize,hipMemcpyDeviceToHost);
 
   } else {
 
-    // Use cudaMemcpyAsync to avoid default spin wait of cudaMemcpy wich takes 100% CPU
-    cudaEvent_t evt;
-    cudaEventCreate(&evt);
-    cudaMemcpyAsync(outputItemPinned,outputItem,4,cudaMemcpyDeviceToHost,0);
-    cudaEventRecord(evt,0);
-    while(cudaEventQuery(evt) == cudaErrorNotReady) {
+    // Use hipMemcpyAsync to avoid default spin wait of hipMemcpy wich takes 100% CPU
+    hipEvent_t evt;
+    hipEventCreate(&evt);
+    hipMemcpyAsync(outputItemPinned,outputItem,4,hipMemcpyDeviceToHost,0);
+    hipEventRecord(evt,0);
+    while(hipEventQuery(evt) == hipErrorNotReady) {
       // Sleep 1 ms to free the CPU
       Timer::SleepMillis(1);
     }
-    cudaEventDestroy(evt);
+    hipEventDestroy(evt);
 
   }
 
-  cudaError_t err = cudaGetLastError();
-  if(err != cudaSuccess) {
-    printf("GPUEngine: Launch: %s\n",cudaGetErrorString(err));
+  hipError_t err = hipGetLastError();
+  if(err != hipSuccess) {
+    printf("GPUEngine: Launch: %s\n",hipGetErrorString(err));
     return false;
   }
 
@@ -650,7 +649,7 @@ bool GPUEngine::Launch(std::vector<ITEM> &hashFound,bool spinWait) {
   }
 
   // When can perform a standard copy, the kernel is eneded
-  cudaMemcpy(outputItemPinned,outputItem,nbFound*ITEM_SIZE + 4,cudaMemcpyDeviceToHost);
+  hipMemcpy(outputItemPinned,outputItem,nbFound*ITEM_SIZE + 4,hipMemcpyDeviceToHost);
 
   for(uint32_t i = 0; i < nbFound; i++) {
     uint32_t *itemPtr = outputItemPinned + (i*ITEM_SIZE32 + 1);
