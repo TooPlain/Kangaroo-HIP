@@ -2,13 +2,13 @@
 
 Note from Fork Author:
 Hello to whomever is reading! thanks for your intrest in this project.
-I'm planning on porting this application to either the amd hip api or OpenCL api whichever is easier or faster.
+I'm planning on porting this application to amd hip api.
 The reason for this port is due to the increase in bitcoin rewards from the Bitcoin Challenge,
 and the fact there haven't been any good implementation of Pollard's kangaroo solver for amd based gpus.
 
-We as a community have to start somewhere instead of complaining about the lack of opencl apps.
+As an community we have to start somewhere, so I decided I'll attempt to port this over for support of amd gpus.
 
-So big shoutout to the original author of this repo JlP! For writing this app!
+So big shoutout to the original author of this repo JLP! For writing the app!
 
 A Pollard's kangaroo interval ECDLP solver for SECP256K1 (based on VanitySearch engine).\
 **This program is limited to a 125bit interval search.**
