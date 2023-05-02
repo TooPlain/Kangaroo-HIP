@@ -32,9 +32,9 @@
 
 // ---------------------------------------------------------------------------------------
 
-__global__ void comp_kangaroos(uint64_t *kangaroos,uint32_t maxFound,uint32_t *found,uint64_t dpMask) {
+__global__ void comp_kangaroos(uint64_t *kangaroos,uint32_t maxFound,uint32_t *found,uint64_t dpMask) __attribute__((amdgpu_flat_work_group_size(1, 512))) {
 
-  int xPtr = (blockIdx.x*blockDim.x*GPU_GRP_SIZE) * KSIZE; // x[4] , y[4] , d[2], lastJump
+  int xPtr = (hipBlockIdx_x*hipBlockDim_x*GPU_GRP_SIZE) * KSIZE; // x[4] , y[4] , d[2], lastJump
   ComputeKangaroos(kangaroos + xPtr,maxFound,found,dpMask);
 
 }
@@ -243,7 +243,7 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
   for(int i=0;i<5;i++) {
     double t0 = Timer::get_tick();
     check_gpu<<<1,1>>>();
-    cudaThreadSynchronize();
+    hipThreadSynchronize();
     double t1 = Timer::get_tick();
     if( (t1-t0)<minT ) minT = (t1-t0);
   }
@@ -288,7 +288,7 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
 
     // This function call returns 0 if there are no CUDA capable devices.
     if(deviceCount == 0) {
-      printf("GPUEngine: There are no available device(s) that support CUDA\n");
+      printf("GPUEngine: There are no available device(s) that support HIPAMD\n");
       return false;
     }
 
@@ -545,8 +545,11 @@ bool GPUEngine::callKernel() {
   hipMemset(outputItem,0,4);
 
   // Call the kernel (Perform STEP_SIZE keys per thread)
-  comp_kangaroos << < nbThread / nbThreadPerGroup,nbThreadPerGroup >> > (inputKangaroo,maxFound,outputItem,dpMask);
+  //comp_kangaroos << < nbThread / nbThreadPerGroup,nbThreadPerGroup >> > (inputKangaroo,maxFound,outputItem,dpMask);
 
+  //Should work insead of using the Cuda syntax
+  hipLaunchKernelGGL(comp_kangaroos, dim3(nbThread / nbThreadPerGroup), dim3(nbThreadPerGroup), 0, 0,inputKangaroo,maxFound,outputItem,dpMask);
+  
   hipError_t err = hipGetLastError();
   if(err != hipSuccess) {
     printf("GPUEngine: Kernel: %s\n",hipGetErrorString(err));
