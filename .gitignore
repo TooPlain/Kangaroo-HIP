@@ -13,3 +13,4 @@ kangaroo
 cmake-build-debug/
 *.prf
 /.cproject
+/.project
