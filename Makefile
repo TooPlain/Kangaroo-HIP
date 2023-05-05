@@ -40,9 +40,6 @@ OBJET = $(addprefix $(OBJDIR)/, \
 endif
 
 CXX        = g++
-CUDA       = /usr/local/cuda-8.0
-CXXCUDA    = /usr/bin/g++-4.8
-NVCC       = $(CUDA)/bin/nvcc
 HIP_PATH ?= $(shell hipconfig --path)
 HIPCC	   = $(HIP_PATH)/bin/hipcc
 
@@ -72,10 +69,10 @@ endif
 ifdef gpu
 ifdef debug
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(HIPCC) -G -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(HIPCC) -m64 -g -I$(HIP_PATH)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(HIPCC) -G -maxrregcount=0  -m64 -g -I$(HIP_PATH)/include -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
 else
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(HIPCC) -fPIC -O2 -I$(HIP_PATH)/include -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(HIPCC) -I$(HIP_PATH)/include -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
 endif
 endif
 
@@ -104,4 +101,3 @@ clean:
 	@rm -f obj/*.o
 	@rm -f obj/GPU/*.o
 	@rm -f obj/SECPK1/*.o
-
